@@ -1,0 +1,50 @@
+name: TMAS Container Scan
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+  schedule:
+    # Daily at 12:30 PM EDT (16:30 UTC)
+    - cron: '30 16 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  tmas-scan:
+    name: Build & Scan Container Image
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build container image
+        run: docker build -f eicar.dockerfile -t eicar-docker:scan .
+
+      - name: TMAS Vulnerability + Secret Scan (source)
+        uses: trendmicro/tmas-scan-action@v2
+        with:
+          version: '2'
+          vulnerabilitiesScan: true
+          malwareScan: false
+          secretsScan: true
+          artifact: dir:.
+          additionalArgs: --region=us-east-1 --evaluatePolicy
+          tmasApiKey: ${{ secrets.TMAS_API_KEY }}
+          githubToken: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: TMAS Malware Scan (container image)
+        uses: trendmicro/tmas-scan-action@v2
+        with:
+          version: '2'
+          vulnerabilitiesScan: true
+          malwareScan: true
+          secretsScan: true
+          artifact: docker:eicar-docker:scan
+          additionalArgs: --region=us-east-1 --evaluatePolicy
+          tmasApiKey: ${{ secrets.TMAS_API_KEY }}
+          githubToken: ${{ secrets.GITHUB_TOKEN }}
