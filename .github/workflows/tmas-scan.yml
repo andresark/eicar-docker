@@ -26,9 +26,8 @@ jobs:
         run: docker build -f eicar.dockerfile -t eicar-docker:scan .
 
       - name: TMAS Vulnerability + Secret Scan (source)
-        uses: trendmicro/tmas-scan-action@v2
+        uses: trendmicro/tmas-scan-action@v3.1.3
         with:
-          version: '2'
           vulnerabilitiesScan: true
           malwareScan: false
           secretsScan: true
@@ -38,9 +37,8 @@ jobs:
           githubToken: ${{ secrets.GITHUB_TOKEN }}
 
       - name: TMAS Malware Scan (container image)
-        uses: trendmicro/tmas-scan-action@v2
+        uses: trendmicro/tmas-scan-action@v3.1.3
         with:
-          version: '2'
           vulnerabilitiesScan: true
           malwareScan: true
           secretsScan: true
