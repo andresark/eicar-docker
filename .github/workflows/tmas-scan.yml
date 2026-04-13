@@ -1,4 +1,4 @@
-name: TMAS Container Scan
+name: TMAS Scan
 
 on:
   push:
@@ -15,17 +15,14 @@ permissions:
   pull-requests: write
 
 jobs:
-  tmas-scan:
-    name: Build & Scan Container Image
+  source-scan:
+    name: "Source: Vulnerabilities & Secrets"
     runs-on: ubuntu-22.04
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Build container image
-        run: docker build -f eicar.dockerfile -t eicar-docker:scan .
-
-      - name: TMAS Vulnerability + Secret Scan (source)
+      - name: Scan source for vulnerabilities & secrets
         uses: trendmicro/tmas-scan-action@v3.1.3
         with:
           vulnerabilitiesScan: true
@@ -36,12 +33,43 @@ jobs:
           tmasApiKey: ${{ secrets.TMAS_API_KEY }}
           githubToken: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: TMAS Malware Scan (container image)
+  container-vulnerability-scan:
+    name: "Container: Vulnerabilities & Secrets"
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build container image
+        run: docker build -f eicar.dockerfile -t eicar-docker:scan .
+
+      - name: Scan container for vulnerabilities & secrets
         uses: trendmicro/tmas-scan-action@v3.1.3
         with:
           vulnerabilitiesScan: true
-          malwareScan: true
+          malwareScan: false
           secretsScan: true
+          artifact: docker:eicar-docker:scan
+          additionalArgs: --region=us-east-1 --evaluatePolicy
+          tmasApiKey: ${{ secrets.TMAS_API_KEY }}
+          githubToken: ${{ secrets.GITHUB_TOKEN }}
+
+  container-malware-scan:
+    name: "Container: Malware Detection"
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build container image
+        run: docker build -f eicar.dockerfile -t eicar-docker:scan .
+
+      - name: Scan container for malware
+        uses: trendmicro/tmas-scan-action@v3.1.3
+        with:
+          vulnerabilitiesScan: false
+          malwareScan: true
+          secretsScan: false
           artifact: docker:eicar-docker:scan
           additionalArgs: --region=us-east-1 --evaluatePolicy
           tmasApiKey: ${{ secrets.TMAS_API_KEY }}
